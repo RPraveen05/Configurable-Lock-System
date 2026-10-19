@@ -1,28 +1,65 @@
 `timescale 1ns / 1ps
 
-module Configurable_Lock(
-    input [15:0] sw,
-    input Button,
-    output reg [1:0] led
-    );
-    
-    wire match; 
-    
-    assign match = ( sw[15:12] == sw[3:0]);
-    
+module combination_lock_top (
+    input wire clk,         
+    input wire [15:0] sw,  
+    input wire button,       
+    output reg [1:0] led,    
+    output reg [3:0] an,     
+    output reg [6:0] seg   
+);
+    wire match;
+    assign match = (sw[15:12] == sw[3:0]);
+
     always @(*) begin
-     led[0] = 1'b0;
-     led[1] = 1'b0;
-     
-     if(Button) begin
-     if (match) begin
-     led[0] = 1'b1;
-     led[1] = 1'b0;
-     end
-     else begin
-     led[0] = 1'b0;
-     led[1] = 1'b1;
-     end
-     end
-     end
+        led = 2'b00;
+        if (button) begin
+            if (match) led[0] = 1'b1;
+            else       led[1] = 1'b1;
+        end
+    end
+
+
+    reg [19:0] refresh_counter = 0;
+    always @(posedge clk) begin
+        refresh_counter <= refresh_counter + 1;
+    end
+    
+    wire [1:0] active_digit = refresh_counter[19:18];
+
+    localparam char_O = 7'b1000000;
+    localparam char_P = 7'b0001100;
+    localparam char_E = 7'b0000110; 
+    localparam char_N = 7'b1001000; 
+    localparam char_r = 7'b1101110; 
+    localparam char_blank = 7'b1111111; 
+
+    // 4. Dynamic Time-Multiplexing Logic
+    always @(*) begin
+        if (button) begin
+            case (active_digit)
+                2'b00: begin
+                    an = 4'b1110;
+                    seg = match ? char_N : char_blank; 
+                end
+                2'b01: begin
+                    an = 4'b1101; 
+                    seg = match ? char_E : char_r; 
+                end
+                2'b10: begin
+                    an = 4'b1011; 
+                    seg = match ? char_P : char_r;     
+                end
+                2'b11: begin
+                    an = 4'b0111; 
+                    seg = match ? char_O : char_E;    
+                end
+            endcase
+        end else begin
+            an = 4'b1111;
+            seg = char_blank;
+        end
+    end
+
 endmodule
+
