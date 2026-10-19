@@ -1,0 +1,28 @@
+`timescale 1ns / 1ps
+
+module Configurable_Lock(
+    input [15:0] sw,
+    input Button,
+    output reg [1:0] led
+    );
+    
+    wire match; 
+    
+    assign match = ( sw[15:12] == sw[3:0]);
+    
+    always @(*) begin
+     led[0] = 1'b0;
+     led[1] = 1'b0;
+     
+     if(Button) begin
+     if (match) begin
+     led[0] = 1'b1;
+     led[1] = 1'b0;
+     end
+     else begin
+     led[0] = 1'b0;
+     led[1] = 1'b1;
+     end
+     end
+     end
+endmodule
